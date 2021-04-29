@@ -1,0 +1,180 @@
+#include <Arduino.h>
+
+enum Spot {
+  RESOURCE, TARGET,
+};
+enum Sized {
+  BIG, SMALL
+};
+enum Colour {
+  BLACK, GREEN, YELLOW, RED, BLUE
+};
+
+class Cube {
+  public:
+    Cube() {
+    }
+    Cube(Colour colour, Sized sized) {
+      _colour = colour;
+      _sized = sized;
+    }
+
+    Colour _colour;
+    Sized _sized;
+};
+
+class Place {
+  public:
+    Spot _spot;
+    int _x;
+    int _y;
+
+    Place() {}
+    Place(Spot spot, int x, int y) {
+      _spot = spot;
+      _x = x;
+      _y = y;
+    }
+};
+
+
+class Instruction {
+  public:
+    Cube _cube;
+    Place _from;
+    Place _to;
+    Instruction(Cube cube, Place from, Place to) {
+      _cube = cube;
+      _from = from;
+      _to = to;
+    }
+    Instruction() {
+    }
+};
+
+Cube schema[3][3] = {{Cube(GREEN, BIG), Cube(RED, BIG), Cube(BLUE, SMALL)}, //todo **************************************************************************
+  {Cube(YELLOW, SMALL), Cube(BLACK, BIG), Cube(-1, -1)},
+  {Cube(-1, -1), Cube(RED, SMALL), Cube(-1, -1)}
+};
+
+Cube resources [2][5] = //todo ******************************************************************************************************************************
+{ {Cube(BLUE, BIG), Cube(RED, BIG), Cube(BLACK, BIG), Cube(GREEN, BIG), Cube(YELLOW, BIG)},
+  {Cube(RED, SMALL), Cube(BLACK, SMALL), Cube(YELLOW, SMALL), Cube(GREEN, SMALL), Cube(BLUE, SMALL)}
+};
+
+Cube target [3][3] = {{Cube(-1, -1), Cube(-1, -1), Cube(-1, -1)}, //*****************************************************************************************
+  {Cube(-1, -1), Cube(-1, -1), Cube(-1, -1)},
+  {Cube(-1, -1), Cube(-1, -1), Cube(-1, -1)}
+}; //todo
+
+void defineBuildingOrder(int a[]) {
+
+  //todo сортировать массив и начинать стоить с самых маленьких. Так будет меньше ходов в среднем.
+}
+
+Place findCube(Colour colour, Sized sized) {
+  for (int i = 0; i < 5; i++) { //поиск в resource'ах
+    for (int j = 0; j < 2; j++) {
+      Cube cube = resources[i][j];
+      if (cube._colour == colour && cube._sized == sized) {
+        Place place(RESOURCE, i, j);
+        return place;
+      }
+    }
+  }
+  for (int i = 0; i < 3; i++) { //поиск в target'е
+    for (int j = 0; j < 3; j++) {
+      Cube cube = target[i][j];
+      if (cube._colour == colour && cube._sized == sized) {
+        Place place(TARGET, i, j);
+        return place;
+      }
+    }
+  }
+}
+
+Place findFreePlace(int exceptNumber) {
+  //todo искать свободное место, ближайшее к текущему кубу, чтобы меньше тащить
+  //todo если свободное место закроет нужный куб, нужно попытаться найти другое, или перетащить нужный куб на место посторойки
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 2; j++) {
+      /*if (resources[i][j] == null){//доделать в реалиях с++
+          return new Place(Spot.RESOURCE, i,j);
+        }*/
+    }
+  }
+  for (int j = 0; j < 3; j++) {
+    /*if (j != exceptNumber && target[0][j] == null){ //доделать в реалиях с++
+        return new Place(Spot.TARGET, 0, j);
+      }*/
+  }
+}
+
+//List<Instruction> build(int number) {
+//  Cube[] schemaForBuilding = getSchemaForBuilding(number);
+//  List<Instruction> instructions = new ArrayList<>();
+//  for (int i = 0; i < schemaForBuilding.length; i++) {
+//    Cube cube = schemaForBuilding[i];
+//    if (cube == null) continue;
+//    Place place = findCube(cube.colour, cube.size);
+//    if (place.spot == Spot.RESOURCE && place.x == 0 && resources[1][place.y] != null) {
+//      System.out.println("ко-ко-ко, не можем достать нужный куб. нужно сначала убрать мешающий");
+//      Place freePlace = findFreePlace(number);
+//      if (freePlace.spot == Spot.TARGET) {
+//        System.out.println("ой-ёй-ёй. Не хочется тащить левый куб на зону постройки. Нужно взять другой");
+//        Cube smallCube = getSmallCube(schemaForBuilding);
+//        Place smallCubePlace = findCube(smallCube.colour, smallCube.size);
+//        Instruction instruction = move(smallCubePlace, freePlace);
+//        instructions.add(instruction);
+//
+//        Place obstructCubePlace = new Place(Spot.RESOURCE, 1, place.y);
+//        instruction = move(obstructCubePlace, smallCubePlace);
+//        instructions.add(instruction);
+//      } else {
+//        Place obstructCubePlace = new Place(Spot.RESOURCE, 1, place.y);
+//        Instruction instruction = move(obstructCubePlace, freePlace);
+//        instructions.add(instruction);
+//      }
+//    }
+//    Place toPlace = new Place(Spot.TARGET, i, number);
+//    Instruction instruction = move(place, toPlace);
+//    instructions.add(instruction);
+//  }
+//  return instructions;
+//}
+
+Instruction moves(Place from, Place to) {
+  Cube fromSpot[][5] = (from._spot == RESOURCE) ? resources : target;
+  Cube toSpot[][5] = (to._spot == RESOURCE) ? resources : target;
+
+  Cube cube = fromSpot[from._x][from._y];
+
+  fromSpot[from._x][from._y] = null;
+  toSpot[to._x][to._y] = cube;
+
+  Instruction instruction(cube, from, to);
+
+  return instruction;
+}
+
+Cube getSmallCube(Cube schema[]) {
+  for (int j = 2 ; j >= 0 ; j --) {
+    if (schema[j]._sized == SMALL) { //schema[j] != null
+      return schema[j];
+    }
+  }
+}
+
+void getSchemaForBuilding(int number, Cube result[]) {
+  for (int j = 0; j < 3; j++) {
+    result[j] = schema[j][number];
+  }
+}
+void setup() {
+  Serial.begin(9600);
+
+}
+
+void loop() {
+
+}
